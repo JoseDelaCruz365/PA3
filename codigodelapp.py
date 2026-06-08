@@ -14,12 +14,29 @@ st.set_page_config(
 )
 
 # ================================
+# ⚠️ URL DIRECTA DE TU CSV EN GITHUB (rama main - siempre actualizada)
+# ================================
+URL_CSV_GITHUB = "https://raw.githubusercontent.com/JoseDelaCruz365/PA3/main/scopus_export%20(2).csv"
+
+# ================================
 # FUNCIONES DE PROCESAMIENTO
 # ================================
 
 @st.cache_data
-def cargar_datos(archivo):
-    df = pd.read_csv(archivo)
+def cargar_datos_desde_github(url):
+    """Carga el CSV directamente desde GitHub"""
+    try:
+        df = pd.read_csv(url)
+        st.success(f"✅ Archivo cargado exitosamente desde GitHub: {len(df)} registros")
+        return df
+    except Exception as e:
+        st.error(f"❌ Error al cargar desde GitHub: {e}")
+        st.info("Verifica que la URL sea correcta y el archivo exista en el repositorio")
+        return None
+
+@st.cache_data
+def limpiar_datos(df):
+    """Limpia y prepara el DataFrame"""
     df['Year'] = pd.to_numeric(df['Year'], errors='coerce')
     df['Cited by'] = df['Cited by'].astype(str).str.replace(',', '').str.strip()
     df['Cited by'] = pd.to_numeric(df['Cited by'], errors='coerce').fillna(0)
@@ -67,7 +84,26 @@ def extraer_palabras_frecuentes(df, top_n=10):
     return pd.DataFrame(contador.most_common(top_n), columns=['Palabra', 'Frecuencia'])
 
 # ================================
-# SIDEBAR - INFORMACIÓN DEL PROYECTO
+# CARGA DE DATOS DESDE GITHUB
+# ================================
+st.title("🧠 Inteligencia Artificial y la Prevención de Salud Mental Juvenil")
+st.caption("Análisis Bibliométrico | Datos cargados directamente desde GitHub")
+
+# Cargar datos
+df_raw = cargar_datos_desde_github(URL_CSV_GITHUB)
+
+if df_raw is None:
+    st.stop()
+
+# Limpiar datos
+df_raw = limpiar_datos(df_raw)
+
+# Determinar rangos
+min_year = int(df_raw['Year'].min()) if not pd.isna(df_raw['Year'].min()) else 2019
+max_year = int(df_raw['Year'].max()) if not pd.isna(df_raw['Year'].max()) else 2026
+
+# ================================
+# SIDEBAR - INFORMACIÓN Y FILTROS
 # ================================
 with st.sidebar:
     st.image("https://cdn-icons-png.flaticon.com/512/2103/2103633.png", width=70)
@@ -87,59 +123,36 @@ with st.sidebar:
         """)
     
     with st.expander("📚 Fuente y Periodo", expanded=True):
-        st.markdown("""
+        st.markdown(f"""
         - **Base de datos:** Scopus  
-        - **Rango:** 2019 - 2026  
+        - **Rango:** {min_year} - {max_year}  
         - **Keywords:** Artificial Intelligence, Mental Health, Prevention, Youth
+        - **Repositorio:** [GitHub - JoseDelaCruz365/PA3](https://github.com/JoseDelaCruz365/PA3)
         """)
     
     st.divider()
     
-    # Carga de archivo
-    st.markdown("## 📂 Carga de Datos")
-    archivo_subido = st.file_uploader(
-        "Subir CSV exportado desde Scopus",
-        type=["csv"]
+    # Filtro de años
+    st.markdown("## 🎚️ Filtro Temporal")
+    rango_anios = st.slider(
+        "Rango de años",
+        min_value=min_year,
+        max_value=max_year,
+        value=(max(2019, min_year), max_year),
+        step=1
     )
+    st.caption(f"📅 Mostrando: {rango_anios[0]} - {rango_anios[1]}")
     
-    if archivo_subido is None:
-        st.info("👈 Esperando archivo CSV...")
-        st.stop()
+    # Mostrar información del archivo
+    st.divider()
+    st.caption(f"📁 Archivo: `scopus_export (2).csv`")
+    st.caption(f"✅ Cargado desde GitHub")
+
+# Aplicar filtro de años
+df = df_raw[(df_raw['Year'] >= rango_anios[0]) & (df_raw['Year'] <= rango_anios[1])]
 
 # ================================
-# CARGA Y FILTRADO DE DATOS
-# ================================
-try:
-    df_raw = cargar_datos(archivo_subido)
-    
-    min_year = int(df_raw['Year'].min()) if not pd.isna(df_raw['Year'].min()) else 2019
-    max_year = int(df_raw['Year'].max()) if not pd.isna(df_raw['Year'].max()) else 2026
-    
-    with st.sidebar:
-        st.markdown("## 🎚️ Filtro Temporal")
-        rango_anios = st.slider(
-            "Rango de años",
-            min_value=min_year,
-            max_value=max_year,
-            value=(max(2019, min_year), max_year),
-            step=1
-        )
-        st.caption(f"📅 {rango_anios[0]} - {rango_anios[1]}")
-    
-    df = df_raw[(df_raw['Year'] >= rango_anios[0]) & (df_raw['Year'] <= rango_anios[1])]
-    
-except Exception as e:
-    st.error(f"Error al leer el archivo: {e}")
-    st.stop()
-
-# ================================
-# TÍTULO PRINCIPAL
-# ================================
-st.title("🧠 Inteligencia Artificial y la Prevención de Salud Mental Juvenil")
-st.caption("Análisis Bibliométrico de Producción Científica | Scopus")
-
-# ================================
-# RECOMENDACIONES (Inspirado en dashboard de referencia)
+# RECOMENDACIONES (inspirado en el dashboard de referencia)
 # ================================
 st.markdown("## 📋 Recomendaciones basadas en la literatura")
 
@@ -184,7 +197,7 @@ with col_k2:
 with col_k3:
     st.metric("📈 Impacto promedio", f"{round(df['Cited by'].mean(), 2)}")
 with col_k4:
-    st.metric("📅 Rango temporal", f"{rango_anios[0]} - {rango_anios[1]}")
+    st.metric("📅 Rango seleccionado", f"{rango_anios[0]} - {rango_anios[1]}")
 
 st.divider()
 
@@ -196,7 +209,7 @@ st.dataframe(
     df[['Authors', 'Title', 'Year', 'Cited by', 'Source title', 'Document Type']].head(10),
     use_container_width=True
 )
-st.caption("Fuente: Scopus | Exportación directa")
+st.caption(f"📌 Mostrando primeros 10 registros de {len(df)} totales | Fuente: Scopus")
 
 st.divider()
 
@@ -226,7 +239,7 @@ else:
 st.divider()
 
 # ================================
-# GRÁFICO 2: Top autores más citados
+# GRÁFICO 2: Top autores más citados (horizontal)
 # ================================
 st.markdown("## 🏆 Top 10 autores más citados")
 
@@ -273,10 +286,13 @@ if df['Abstract'].str.len().sum() > 0:
         
         plt.tight_layout()
         st.pyplot(fig3)
+        
+        with st.expander("📄 Ver tabla de frecuencias"):
+            st.dataframe(df_palabras, use_container_width=True)
     else:
         st.warning("No se pudieron extraer palabras suficientes")
 else:
     st.warning("No hay abstracts disponibles")
 
 st.divider()
-st.caption("📌 Dashboard desarrollado con Streamlit | Datos exportados desde Scopus | Grupo 05")
+st.caption("📌 Dashboard desarrollado con Streamlit | Datos cargados desde GitHub | Grupo 05")
