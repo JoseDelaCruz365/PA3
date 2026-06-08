@@ -289,40 +289,50 @@ else:
 st.divider()
 
 # ================================
-# GRÁFICO 2: Top 10 Artículos Más Citados (sin texto negro)
+# GRÁFICO 2: Top N Artículos Más Citados (con selector de cantidad)
 # ================================
-st.markdown("## 🏆 Top 10 Artículos Más Citados sobre IA en Salud Mental Juvenil")
+st.markdown("## 🏆 Top Artículos Más Citados sobre IA en Salud Mental Juvenil")
 
-top_articulos = df.nlargest(10, 'Cited by')[['Title', 'Cited by']].copy()
+# Selector de cantidad (igual al dashboard de referencia)
+col_filtro, _ = st.columns([1, 3])
+with col_filtro:
+    top_n = st.selectbox("📊 Mostrar top N artículos", options=[5, 10, 15, 20], index=1)
+
+# Preparar top artículos por citas
+top_articulos = df.nlargest(top_n, 'Cited by')[['Title', 'Cited by']].copy()
+# Ordenar de menor a mayor para que el más citado quede arriba
 top_articulos = top_articulos.sort_values('Cited by', ascending=True)
 
 if not top_articulos.empty:
-    fig2, ax2 = plt.subplots(figsize=(12, 7))
+    # Ajustar altura del gráfico según cantidad de artículos
+    altura = max(4, top_n * 0.45)
+    
+    fig2, ax2 = plt.subplots(figsize=(12, altura))
     
     # Fondo transparente
     fig2.patch.set_alpha(0)
     ax2.patch.set_alpha(0)
     
-    # Truncar títulos largos
+    # Truncar títulos largos (60 caracteres para que quepan bien)
     titulos = []
     for t in top_articulos['Title']:
         t_str = str(t)
-        if len(t_str) > 70:
-            titulos.append(t_str[:67] + "...")
+        if len(t_str) > 60:
+            titulos.append(t_str[:57] + "...")
         else:
             titulos.append(t_str)
     
-    # Barras horizontales
+    # Barras horizontales (color turquesa)
     y_pos = range(len(top_articulos))
     barras = ax2.barh(y_pos, top_articulos['Cited by'], 
                       color='#42929d', height=0.7, alpha=0.85)
     
-    # Textos en gris claro
+    # Configuración (textos en gris claro)
     ax2.set_yticks(y_pos)
     ax2.set_yticklabels(titulos, fontsize=9, color='#cccccc')
     ax2.invert_yaxis()
     ax2.set_xlabel("Número de citas recibidas", fontsize=11, color='#888888')
-    ax2.set_title("Investigaciones Más Influyentes en IA para Salud Mental Juvenil", 
+    ax2.set_title(f"Top {top_n} Investigaciones Más Influyentes en IA para Salud Mental Juvenil", 
                   fontsize=13, fontweight='bold', pad=15, color='#cccccc')
     
     # Cuadrícula sutil
@@ -335,7 +345,7 @@ if not top_articulos.empty:
     ax2.spines['left'].set_color('#555555')
     ax2.spines['bottom'].set_color('#555555')
     
-    # Valores al final de cada barra
+    # Valor al final de cada barra (amarillo cálido para destacar)
     for i, (_, row) in enumerate(top_articulos.iterrows()):
         ax2.text(row['Cited by'] + 0.5, i, str(int(row['Cited by'])), 
                  va='center', fontsize=9, fontweight='bold', color='#ffcc66')
