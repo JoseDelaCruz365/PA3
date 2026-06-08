@@ -217,7 +217,7 @@ st.divider()
 # ================================
 # Grafico 1: Evolución Temporal + Impacto (DOBLE EJE - SIN FONDO BLANCO)
 # ================================
-st.markdown("## 📊 Bloque 1: Evolución Temporal e Investigadores de Mayor Impacto")
+st.markdown("## 📊 Evolución Temporal e Investigadores de Mayor Impacto")
 
 # Preparar datos por año
 publicaciones_por_anio = df['Year'].value_counts().sort_index()
@@ -361,7 +361,7 @@ st.divider()
 # ================================
 # GRÁFICO 3: Palabras más frecuentes en abstracts (VERSIÓN SIMPLIFICADA)
 # ================================
-st.markdown("## 🔍 Bloque 2: Análisis de Palabras Clave y Tendencias en Abstracts")
+st.markdown("## 🔍 Análisis de Palabras Clave y Tendencias en Abstracts")
 
 if df['Abstract'].str.len().sum() > 0:
     df_palabras = extraer_palabras_frecuentes(df, top_n=10)
