@@ -427,7 +427,7 @@ st.divider()
 # ================================
 # BLOQUE 3: Repositorio Integrado de Datos Crudos (df.head)
 # ================================
-st.markdown("## 📋 Repositorio Integrado de Datos Crudos (df.head)")
+st.markdown("## 📋 Repositorio Integrado de Datos Crudos")
 
 # Selector de cantidad de filas
 col_filas, _ = st.columns([1, 3])
