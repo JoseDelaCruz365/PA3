@@ -289,50 +289,65 @@ else:
 st.divider()
 
 # ================================
-# BLOQUE 2: Análisis de Palabras Clave
+# GRÁFICO 2: Top 10 Artículos Más Citados (estilo profesional, sin fondo blanco)
 # ================================
-st.markdown("## 🔍 Bloque 2: Análisis de Palabras Clave y Tendencias en Abstracts")
+st.markdown("## 🏆 Top 10 Artículos Más Citados sobre IA en Salud Mental Juvenil")
 
-col_palabras, col_grafico = st.columns(2)
+# Preparar top artículos por citas
+top_articulos = df.nlargest(10, 'Cited by')[['Title', 'Cited by']].copy()
+# Ordenar de menor a mayor para que el más citado quede arriba
+top_articulos = top_articulos.sort_values('Cited by', ascending=True)
 
-with col_palabras:
-    st.markdown("### 📋 Matriz Numérica de Conceptos Frecuentes")
+if not top_articulos.empty:
+    fig2, ax2 = plt.subplots(figsize=(12, 7))
     
-    if df['Abstract'].str.len().sum() > 0:
-        df_palabras = extraer_palabras_frecuentes(df, top_n=10)
-        if not df_palabras.empty:
-            st.dataframe(df_palabras, use_container_width=True, hide_index=True)
+    # 🔧 Hacer fondo transparente (hereda el tema de Streamlit)
+    fig2.patch.set_alpha(0)
+    ax2.patch.set_alpha(0)
+    
+    # Truncar títulos largos para mejor visualización (máximo 70 caracteres)
+    titulos = []
+    for t in top_articulos['Title']:
+        t_str = str(t)
+        if len(t_str) > 70:
+            titulos.append(t_str[:67] + "...")
         else:
-            st.warning("No se pudieron extraer palabras")
-
-with col_grafico:
-    st.markdown("### 📊 Frecuencia de Enfoques de IA")
+            titulos.append(t_str)
     
-    if 'df_palabras' in locals() and not df_palabras.empty:
-        df_palabras_sorted = df_palabras.sort_values('Frecuencia', ascending=True)
-        
-        fig3, ax3 = plt.subplots(figsize=(6, 5))
-        
-        y_pos = range(len(df_palabras_sorted))
-        ax3.barh(y_pos, df_palabras_sorted['Frecuencia'], color='#2ca02c', height=0.7)
-        
-        ax3.set_yticks(y_pos)
-        ax3.set_yticklabels(df_palabras_sorted['Palabra'], fontsize=9)
-        ax3.invert_yaxis()
-        ax3.set_xlabel("Frecuencia", fontsize=10)
-        ax3.set_title("Términos más repetidos en abstracts", fontsize=11)
-        
-        for i, (_, row) in enumerate(df_palabras_sorted.iterrows()):
-            ax3.text(row['Frecuencia'] + 0.3, i, str(row['Frecuencia']), 
-                     va='center', fontsize=8)
-        
-        ax3.spines['top'].set_visible(False)
-        ax3.spines['right'].set_visible(False)
-        ax3.grid(axis='x', linestyle='--', alpha=0.3)
-        
-        plt.tight_layout()
-        st.pyplot(fig3)
+    # Barras horizontales (color turquesa como el top autores)
+    y_pos = range(len(top_articulos))
+    barras = ax2.barh(y_pos, top_articulos['Cited by'], 
+                      color='#42929d', height=0.7, alpha=0.85)
+    
+    # Configuración del gráfico
+    ax2.set_yticks(y_pos)
+    ax2.set_yticklabels(titulos, fontsize=9)
+    ax2.invert_yaxis()  # El más citado arriba
+    ax2.set_xlabel("Número de citas recibidas", fontsize=11, color='#555555')
+    ax2.set_title("Investigaciones Más Influyentes en IA para Salud Mental Juvenil", 
+                  fontsize=13, fontweight='bold', pad=15, color='#2c3e50')
+    
+    # Cuadrícula sutil (solo eje X)
+    ax2.grid(axis='x', linestyle='--', alpha=0.25, color='#999999')
+    ax2.set_axisbelow(True)
+    
+    # Eliminar bordes superiores y derechos
+    ax2.spines['top'].set_visible(False)
+    ax2.spines['right'].set_visible(False)
+    ax2.spines['left'].set_color('#cccccc')
+    ax2.spines['bottom'].set_color('#cccccc')
+    
+    # Valor al final de cada barra (en negrita)
+    for i, (_, row) in enumerate(top_articulos.iterrows()):
+        ax2.text(row['Cited by'] + 0.5, i, str(int(row['Cited by'])), 
+                 va='center', fontsize=9, fontweight='bold', color='#42929d')
+    
+    plt.tight_layout()
+    st.pyplot(fig2)
+else:
+    st.warning("No se encontraron artículos con citas suficientes")
 
+st.divider()
 # ================================
 # GRÁFICO 3: Palabras frecuentes en abstracts
 # ================================
