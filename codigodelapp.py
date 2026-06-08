@@ -422,3 +422,47 @@ else:
     st.warning("No hay abstracts disponibles")
 
 st.divider()
+
+
+# ================================
+# BLOQUE 3: Repositorio Integrado de Datos Crudos (df.head)
+# ================================
+st.markdown("## 📋 Repositorio Integrado de Datos Crudos (df.head)")
+
+# Selector de cantidad de filas
+col_filas, _ = st.columns([1, 3])
+with col_filas:
+    num_filas = st.selectbox("Mostrar top N artículos", options=[5, 10, 15, 20, 50], index=1)
+
+# Mostrar tabla con los datos relevantes (ordenados por citas)
+df_mostrar = df[['Authors', 'Title', 'Year', 'Cited by', 'DOI']].copy()
+df_mostrar = df_mostrar.sort_values('Cited by', ascending=False).head(num_filas)
+
+st.dataframe(
+    df_mostrar,
+    use_container_width=True,
+    hide_index=True,
+    column_config={
+        "Authors": st.column_config.TextColumn("Authors", width="medium"),
+        "Title": st.column_config.TextColumn("Title", width="large"),
+        "Year": st.column_config.NumberColumn("Year", width="small"),
+        "Cited by": st.column_config.NumberColumn("Cited by", width="small"),
+        "DOI": st.column_config.LinkColumn("DOI", display_text="Ver artículo", width="medium")
+    }
+)
+
+st.caption(f"📌 Mostrando los {len(df_mostrar)} artículos más citados de un total de {len(df)} registros | Fuente: Scopus")
+
+# Botón de descarga
+col_descarga, _ = st.columns([1, 3])
+with col_descarga:
+    csv_data = df.to_csv(index=False).encode('utf-8')
+    st.download_button(
+        label="📥 Descargar Subconjunto de Datos (CSV)",
+        data=csv_data,
+        file_name="scopus_export_filtrado.csv",
+        mime="text/csv",
+        use_container_width=True
+    )
+
+st.divider()
