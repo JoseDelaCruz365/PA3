@@ -289,7 +289,7 @@ else:
 st.divider()
 
 # ================================
-# GRÁFICO 2: Top N Artículos Más Citados (CORREGIDO: Mayor arriba)
+# GRÁFICO 2: Top N Artículos Más Citados (DEFINITIVO: más citado ARRIBA)
 # ================================
 st.markdown("## 🏆 Top Artículos Más Citados sobre IA en Salud Mental Juvenil")
 
@@ -301,20 +301,18 @@ with col_filtro:
 # 1. Obtener los N artículos con más citas
 top_articulos = df.nlargest(top_n, 'Cited by')[['Title', 'Cited by']].copy()
 
-# 2. Ordenar de MAYOR a MENOR (el más citado primero)
+# 2. Ordenar de MAYOR a MENOR (el más citado primero en el DataFrame)
 top_articulos = top_articulos.sort_values('Cited by', ascending=False).reset_index(drop=True)
 
 if not top_articulos.empty:
-    # Ajustar altura dinámicamente
     altura = max(4, top_n * 0.45)
     
     fig2, ax2 = plt.subplots(figsize=(12, altura))
     
-    # Fondo transparente para integrarse con Streamlit
     fig2.patch.set_alpha(0)
     ax2.patch.set_alpha(0)
     
-    # Truncar títulos largos
+    # Truncar títulos
     titulos = []
     for t in top_articulos['Title']:
         t_str = str(t)
@@ -323,33 +321,32 @@ if not top_articulos.empty:
         else:
             titulos.append(t_str)
     
-    # Barras horizontales: el primer elemento del DataFrame (más citado) se dibuja ARRIBA
+    # Barras horizontales
     y_pos = range(len(top_articulos))
     barras = ax2.barh(y_pos, top_articulos['Cited by'], 
                       color='#42929d', height=0.7, alpha=0.85)
     
-    # Configurar etiquetas del eje Y (lista de títulos)
+    # Configuración
     ax2.set_yticks(y_pos)
     ax2.set_yticklabels(titulos, fontsize=9, color='#cccccc')
     
-    # NO invertir el eje Y para que el primer elemento quede arriba
-    # ax2.invert_yaxis()  ← Esta línea NO debe estar
+    # 🔑 CLAVE: Invertir el eje Y para que el primer elemento (más citado) quede ARRIBA
+    ax2.invert_yaxis()
     
     ax2.set_xlabel("Número de citas recibidas", fontsize=11, color='#888888')
     ax2.set_title(f"Top {top_n} Investigaciones Más Influyentes en IA para Salud Mental Juvenil", 
                   fontsize=13, fontweight='bold', pad=15, color='#cccccc')
     
-    # Cuadrícula sutil
     ax2.grid(axis='x', linestyle='--', alpha=0.2, color='#666666')
     ax2.set_axisbelow(True)
     
-    # Personalizar bordes
+    # Eliminar bordes
     ax2.spines['top'].set_visible(False)
     ax2.spines['right'].set_visible(False)
     ax2.spines['left'].set_color('#555555')
     ax2.spines['bottom'].set_color('#555555')
     
-    # Mostrar el valor (citas) al final de cada barra
+    # Valores al final de cada barra
     for i, (_, row) in enumerate(top_articulos.iterrows()):
         ax2.text(row['Cited by'] + 0.5, i, str(int(row['Cited by'])), 
                  va='center', fontsize=9, fontweight='bold', color='#ffcc66')
