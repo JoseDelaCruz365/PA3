@@ -287,25 +287,51 @@ else:
     st.warning("No hay datos suficientes")
 
 st.divider()
-# ================================
-# GRÁFICO 2: Top autores más citados (BARRA HORIZONTAL con st.bar_chart)
-# ================================
-st.markdown("## 🏆 Top 10 Investigadores con Mayor Nivel de Citación")
 
-df_top_autores = extraer_top_autores(df, top_n=10)
+# ================================
+# BLOQUE 2: Análisis de Palabras Clave
+# ================================
+st.markdown("## 🔍 Bloque 2: Análisis de Palabras Clave y Tendencias en Abstracts")
 
-if not df_top_autores.empty:
-    # Para bar_chart horizontal, necesitamos transponer o usar datos específicos
-    # st.bar_chart hace barras verticales por defecto, pero se ve bien
-    # Si quieres horizontales exactamente como la imagen, usamos matplotlib solo para ese
-    # Pero st.bar_chart vertical también se ve muy bien y es coherente
+col_palabras, col_grafico = st.columns(2)
+
+with col_palabras:
+    st.markdown("### 📋 Matriz Numérica de Conceptos Frecuentes")
     
-    df_autores_grafico = df_top_autores.set_index('Autor')
-    st.bar_chart(df_autores_grafico, color='#42929d', use_container_width=True)
-else:
-    st.warning("No se encontraron autores con citas")
+    if df['Abstract'].str.len().sum() > 0:
+        df_palabras = extraer_palabras_frecuentes(df, top_n=10)
+        if not df_palabras.empty:
+            st.dataframe(df_palabras, use_container_width=True, hide_index=True)
+        else:
+            st.warning("No se pudieron extraer palabras")
 
-st.divider()
+with col_grafico:
+    st.markdown("### 📊 Frecuencia de Enfoques de IA")
+    
+    if 'df_palabras' in locals() and not df_palabras.empty:
+        df_palabras_sorted = df_palabras.sort_values('Frecuencia', ascending=True)
+        
+        fig3, ax3 = plt.subplots(figsize=(6, 5))
+        
+        y_pos = range(len(df_palabras_sorted))
+        ax3.barh(y_pos, df_palabras_sorted['Frecuencia'], color='#2ca02c', height=0.7)
+        
+        ax3.set_yticks(y_pos)
+        ax3.set_yticklabels(df_palabras_sorted['Palabra'], fontsize=9)
+        ax3.invert_yaxis()
+        ax3.set_xlabel("Frecuencia", fontsize=10)
+        ax3.set_title("Términos más repetidos en abstracts", fontsize=11)
+        
+        for i, (_, row) in enumerate(df_palabras_sorted.iterrows()):
+            ax3.text(row['Frecuencia'] + 0.3, i, str(row['Frecuencia']), 
+                     va='center', fontsize=8)
+        
+        ax3.spines['top'].set_visible(False)
+        ax3.spines['right'].set_visible(False)
+        ax3.grid(axis='x', linestyle='--', alpha=0.3)
+        
+        plt.tight_layout()
+        st.pyplot(fig3)
 
 # ================================
 # GRÁFICO 3: Palabras frecuentes en abstracts
