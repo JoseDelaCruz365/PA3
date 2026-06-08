@@ -215,7 +215,7 @@ st.caption(f"📌 Mostrando primeros 10 registros de {len(df)} totales | Fuente:
 st.divider()
 
 # ================================
-# BLOQUE 1: Evolución Temporal + Impacto (DOBLE EJE)
+# Grafico 1: Evolución Temporal + Impacto (DOBLE EJE - SIN FONDO BLANCO)
 # ================================
 st.markdown("## 📊 Bloque 1: Evolución Temporal e Investigadores de Mayor Impacto")
 
@@ -226,44 +226,60 @@ citas_por_anio = df.groupby('Year')['Cited by'].sum().sort_index()
 if not publicaciones_por_anio.empty:
     fig1, ax1 = plt.subplots(figsize=(12, 5))
     
-    # Eje izquierdo: Barras de publicaciones
+    # 🔧 Hacer fondo transparente (hereda el tema de Streamlit)
+    fig1.patch.set_alpha(0)
+    ax1.patch.set_alpha(0)
+    
+    # Eje izquierdo: Barras de publicaciones (azul)
     años = publicaciones_por_anio.index.astype(int)
     barras = ax1.bar(años, publicaciones_por_anio.values, color='#1f77b4', 
-                     alpha=0.7, label='Publicaciones', width=0.6)
+                     alpha=0.8, label='Publicaciones', width=0.6)
     
-    ax1.set_xlabel("Año de publicación", fontsize=11)
+    ax1.set_xlabel("Año de publicación", fontsize=11, color='#555555')
     ax1.set_ylabel("Número de Publicaciones", fontsize=11, color='#1f77b4')
     ax1.tick_params(axis='y', labelcolor='#1f77b4')
+    ax1.tick_params(axis='x', colors='#666666')
     ax1.set_xticks(años)
     ax1.set_xticklabels(años, rotation=0)
     
-    # Eje derecho: Línea de citas
+    # Eje derecho: Línea de citas (naranja en lugar de rojo)
     ax2 = ax1.twinx()
-    ax2.plot(años, citas_por_anio.values, color='#d62728', marker='o', 
-             linewidth=2, markersize=6, label='Impacto (Citas)')
-    ax2.set_ylabel("Citas Totales", fontsize=11, color='#d62728')
-    ax2.tick_params(axis='y', labelcolor='#d62728')
+    ax2.plot(años, citas_por_anio.values, color='#ff7f0e', marker='o', 
+             linewidth=2.5, markersize=8, label='Impacto (Citas)')
+    ax2.set_ylabel("Citas Totales", fontsize=11, color='#ff7f0e')
+    ax2.tick_params(axis='y', labelcolor='#ff7f0e')
     
-    # Título y cuadrícula
+    # Título
     ax1.set_title("Evolución de la Investigación en IA para Prevención de Salud Mental Juvenil", 
-                  fontsize=13, fontweight='bold', pad=15)
-    ax1.grid(axis='y', linestyle='--', alpha=0.3)
+                  fontsize=13, fontweight='bold', pad=15, color='#2c3e50')
+    
+    # Cuadrícula sutil (solo eje Y izquierdo)
+    ax1.grid(axis='y', linestyle='--', alpha=0.25, color='#999999')
     ax1.set_axisbelow(True)
+    
+    # Eliminar bordes superiores y derechos
+    ax1.spines['top'].set_visible(False)
+    ax1.spines['right'].set_visible(False)
+    ax2.spines['top'].set_visible(False)
+    ax2.spines['left'].set_visible(False)
+    ax1.spines['left'].set_color('#cccccc')
+    ax1.spines['bottom'].set_color('#cccccc')
     
     # Leyenda combinada
     lines1, labels1 = ax1.get_legend_handles_labels()
     lines2, labels2 = ax2.get_legend_handles_labels()
-    ax1.legend(lines1 + lines2, labels1 + labels2, loc='upper left', frameon=True, fancybox=True)
+    ax1.legend(lines1 + lines2, labels1 + labels2, loc='upper left', 
+               frameon=True, fancybox=True, facecolor='white', edgecolor='#dddddd')
     
     # Valores encima de barras
     for barra, valor in zip(barras, publicaciones_por_anio.values):
         ax1.text(barra.get_x() + barra.get_width()/2, barra.get_height() + 0.3,
-                 str(valor), ha='center', va='bottom', fontsize=8, color='#1f77b4')
+                 str(valor), ha='center', va='bottom', fontsize=8, color='#1f77b4', fontweight='bold')
     
     # Valores en la línea de citas
     for i, (year, citas) in enumerate(zip(años, citas_por_anio.values)):
         ax2.text(year, citas + 3, str(int(citas)), ha='center', va='bottom', 
-                 fontsize=8, color='#d62728')
+                 fontsize=8, color='#ff7f0e', fontweight='bold')
     
     plt.tight_layout()
     st.pyplot(fig1)
@@ -271,7 +287,6 @@ else:
     st.warning("No hay datos suficientes")
 
 st.divider()
-
 # ================================
 # GRÁFICO 2: Top autores más citados (BARRA HORIZONTAL con st.bar_chart)
 # ================================
