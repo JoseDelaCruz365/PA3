@@ -359,20 +359,77 @@ else:
 st.divider()
 
 # ================================
-# GRÁFICO 3: Palabras frecuentes en abstracts
+# GRÁFICO 3: Palabras más frecuentes en abstracts (estilo profesional)
 # ================================
-st.markdown("## 🔍 Análisis de Palabras Clave y Tendencias en Abstracts")
+st.markdown("## 🔍 Bloque 2: Análisis de Palabras Clave y Tendencias en Abstracts")
 
 if df['Abstract'].str.len().sum() > 0:
     df_palabras = extraer_palabras_frecuentes(df, top_n=10)
     
     if not df_palabras.empty:
-        df_palabras_grafico = df_palabras.set_index('Palabra')
-        st.bar_chart(df_palabras_grafico, color='#2ca02c', use_container_width=True)
+        # Ordenar de MAYOR a MENOR frecuencia (la más frecuente arriba)
+        df_palabras = df_palabras.sort_values('Frecuencia', ascending=False).reset_index(drop=True)
         
-        with st.expander("📄 Ver tabla de frecuencias"):
+        # Crear dos columnas: tabla + gráfico
+        col_tabla, col_grafico = st.columns(2)
+        
+        with col_tabla:
+            st.markdown("### 📋 Matriz Numérica de Conceptos Frecuentes")
+            st.dataframe(df_palabras, use_container_width=True, hide_index=True)
+        
+        with col_grafico:
+            st.markdown("### 📊 Frecuencia de Enfoques de IA y Métodos de Prevención")
+            
+            # Altura dinámica (10 palabras = altura fija)
+            fig3, ax3 = plt.subplots(figsize=(6, 6))
+            
+            # Fondo transparente
+            fig3.patch.set_alpha(0)
+            ax3.patch.set_alpha(0)
+            
+            # Preparar datos
+            palabras = df_palabras['Palabra'].tolist()
+            frecuencias = df_palabras['Frecuencia'].tolist()
+            
+            # Barras horizontales (la primera palabra -más frecuente- quedará arriba)
+            y_pos = range(len(palabras))
+            barras = ax3.barh(y_pos, frecuencias, color='#2ca02c', height=0.7, alpha=0.85)
+            
+            # Configuración
+            ax3.set_yticks(y_pos)
+            ax3.set_yticklabels(palabras, fontsize=9, color='#cccccc')
+            
+            # 🔑 Invertir eje Y para que la palabra más frecuente quede ARRIBA
+            ax3.invert_yaxis()
+            
+            ax3.set_xlabel("Frecuencia", fontsize=11, color='#888888')
+            ax3.set_title("Términos más repetidos en los abstracts", 
+                          fontsize=12, fontweight='bold', pad=15, color='#cccccc')
+            
+            # Cuadrícula sutil
+            ax3.grid(axis='x', linestyle='--', alpha=0.2, color='#666666')
+            ax3.set_axisbelow(True)
+            
+            # Eliminar bordes
+            ax3.spines['top'].set_visible(False)
+            ax3.spines['right'].set_visible(False)
+            ax3.spines['left'].set_color('#555555')
+            ax3.spines['bottom'].set_color('#555555')
+            
+            # Valores al final de cada barra
+            for i, (palabra, freq) in enumerate(zip(palabras, frecuencias)):
+                ax3.text(freq + 0.5, i, str(freq), 
+                         va='center', fontsize=9, fontweight='bold', color='#ffcc66')
+            
+            plt.tight_layout()
+            st.pyplot(fig3)
+        
+        # Expandible con tabla detallada (opcional)
+        with st.expander("📄 Ver análisis detallado de palabras"):
             st.dataframe(df_palabras, use_container_width=True)
     else:
         st.warning("No se pudieron extraer palabras suficientes")
 else:
     st.warning("No hay abstracts disponibles")
+
+st.divider()
