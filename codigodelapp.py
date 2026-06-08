@@ -289,23 +289,28 @@ else:
 st.divider()
 
 # ================================
-# GRÁFICO 2: Top 10 Artículos Más Citados (estilo profesional, sin fondo blanco)
+# GRÁFICO 2: Top N Artículos Más Citados (con selector dinámico)
 # ================================
-st.markdown("## 🏆 Top 10 Artículos Más Citados sobre IA en Salud Mental Juvenil")
+st.markdown("## 🏆 Top Artículos Más Citados sobre IA en Salud Mental Juvenil")
+
+# Selector de cantidad
+top_n = st.selectbox("Mostrar top N artículos", options=[5, 10, 15, 20], index=1)
 
 # Preparar top artículos por citas
-top_articulos = df.nlargest(10, 'Cited by')[['Title', 'Cited by']].copy()
-# Ordenar de menor a mayor para que el más citado quede arriba
+top_articulos = df.nlargest(top_n, 'Cited by')[['Title', 'Cited by']].copy()
 top_articulos = top_articulos.sort_values('Cited by', ascending=True)
 
 if not top_articulos.empty:
-    fig2, ax2 = plt.subplots(figsize=(12, 7))
+    # Ajustar altura del gráfico según cantidad de artículos
+    altura = max(5, top_n * 0.6)
     
-    # 🔧 Hacer fondo transparente (hereda el tema de Streamlit)
+    fig2, ax2 = plt.subplots(figsize=(12, altura))
+    
+    # Fondo transparente
     fig2.patch.set_alpha(0)
     ax2.patch.set_alpha(0)
     
-    # Truncar títulos largos para mejor visualización (máximo 70 caracteres)
+    # Truncar títulos
     titulos = []
     for t in top_articulos['Title']:
         t_str = str(t)
@@ -314,30 +319,27 @@ if not top_articulos.empty:
         else:
             titulos.append(t_str)
     
-    # Barras horizontales (color turquesa como el top autores)
+    # Barras horizontales
     y_pos = range(len(top_articulos))
     barras = ax2.barh(y_pos, top_articulos['Cited by'], 
                       color='#42929d', height=0.7, alpha=0.85)
     
-    # Configuración del gráfico
     ax2.set_yticks(y_pos)
     ax2.set_yticklabels(titulos, fontsize=9)
-    ax2.invert_yaxis()  # El más citado arriba
+    ax2.invert_yaxis()
     ax2.set_xlabel("Número de citas recibidas", fontsize=11, color='#555555')
-    ax2.set_title("Investigaciones Más Influyentes en IA para Salud Mental Juvenil", 
+    ax2.set_title(f"Top {top_n} Investigaciones Más Influyentes", 
                   fontsize=13, fontweight='bold', pad=15, color='#2c3e50')
     
-    # Cuadrícula sutil (solo eje X)
     ax2.grid(axis='x', linestyle='--', alpha=0.25, color='#999999')
     ax2.set_axisbelow(True)
     
-    # Eliminar bordes superiores y derechos
     ax2.spines['top'].set_visible(False)
     ax2.spines['right'].set_visible(False)
     ax2.spines['left'].set_color('#cccccc')
     ax2.spines['bottom'].set_color('#cccccc')
     
-    # Valor al final de cada barra (en negrita)
+    # Valores al final
     for i, (_, row) in enumerate(top_articulos.iterrows()):
         ax2.text(row['Cited by'] + 0.5, i, str(int(row['Cited by'])), 
                  va='center', fontsize=9, fontweight='bold', color='#42929d')
