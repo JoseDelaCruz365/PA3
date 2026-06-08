@@ -222,9 +222,9 @@ st.markdown("## 📅 Cronología de Publicaciones Científicas")
 publicaciones_por_anio = df['Year'].value_counts().sort_index()
 
 if not publicaciones_por_anio.empty:
-    # Convertir a DataFrame para area_chart
+    # Convertir años a string para evitar formato con comas
     df_anios = pd.DataFrame({
-        'Año': publicaciones_por_anio.index,
+        'Año': publicaciones_por_anio.index.astype(str),  # ← CLAVE: convertir a string
         'Publicaciones': publicaciones_por_anio.values
     }).set_index('Año')
     
@@ -234,7 +234,6 @@ else:
     st.warning("No hay datos suficientes")
 
 st.divider()
-
 # ================================
 # GRÁFICO 2: Top autores más citados (BARRA HORIZONTAL con st.bar_chart)
 # ================================
