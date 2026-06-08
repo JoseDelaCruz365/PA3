@@ -347,7 +347,7 @@ if not top_articulos.empty:
     st.pyplot(fig2)
 else:
     st.warning("No se encontraron artículos con citas")
-
+    
 # ================================
 # GRÁFICO 3: Palabras frecuentes en abstracts
 # ================================
