@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import re
+import numpy as np
 from collections import Counter
 
 # ================================
@@ -214,7 +215,7 @@ st.caption(f"📌 Mostrando primeros 10 registros de {len(df)} totales | Fuente:
 st.divider()
 
 # ================================
-# GRÁFICO 1: Publicaciones por año
+# GRÁFICO 1: Publicaciones por año (MODERNO)
 # ================================
 st.markdown("## 📅 Evolución de publicaciones por año")
 
@@ -222,14 +223,39 @@ publicaciones_por_anio = df['Year'].value_counts().sort_index()
 
 if not publicaciones_por_anio.empty:
     fig1, ax1 = plt.subplots(figsize=(10, 5))
-    ax1.bar(publicaciones_por_anio.index.astype(str), publicaciones_por_anio.values, color='#1f77b4')
-    ax1.set_xlabel("Año", fontsize=11)
-    ax1.set_ylabel("Número de publicaciones", fontsize=11)
-    ax1.set_title("Crecimiento de la investigación en IA para prevención de salud mental juvenil", fontsize=13)
-    ax1.tick_params(axis='x', rotation=45)
     
-    for i, (year, count) in enumerate(publicaciones_por_anio.items()):
-        ax1.text(i, count + 0.5, str(count), ha='center', fontsize=9)
+    # Colores degradados
+    años = publicaciones_por_anio.index.astype(str)
+    valores = publicaciones_por_anio.values
+    
+    # Paleta moderna: azul turquesa a morado suave
+    colores = ['#1f77b4', '#2ca02c', '#ff7f0e', '#d62728', '#9467bd', 
+               '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
+    
+    barras = ax1.bar(años, valores, color=colores[:len(años)], edgecolor='white', linewidth=1.5)
+    
+    # Estilo profesional
+    ax1.set_xlabel("Año", fontsize=12, fontweight='semibold', color='#34495e')
+    ax1.set_ylabel("Número de publicaciones", fontsize=12, fontweight='semibold', color='#34495e')
+    ax1.set_title("📈 Crecimiento de la investigación en IA para prevención de salud mental juvenil", 
+                  fontsize=14, fontweight='bold', pad=20, color='#2c3e50')
+    ax1.tick_params(axis='x', rotation=45, labelsize=10)
+    ax1.tick_params(axis='y', labelsize=10)
+    
+    # Cuadrícula suave
+    ax1.grid(axis='y', linestyle='--', alpha=0.3, color='gray')
+    ax1.set_axisbelow(True)
+    
+    # Añadir valores encima de barras
+    for barra, valor in zip(barras, valores):
+        ax1.text(barra.get_x() + barra.get_width()/2, barra.get_height() + 0.5,
+                 str(valor), ha='center', va='bottom', fontsize=9, fontweight='bold', color='#2c3e50')
+    
+    # Fondo y bordes
+    ax1.set_facecolor('#f8f9fa')
+    fig1.patch.set_facecolor('white')
+    ax1.spines['top'].set_visible(False)
+    ax1.spines['right'].set_visible(False)
     
     plt.tight_layout()
     st.pyplot(fig1)
@@ -239,7 +265,7 @@ else:
 st.divider()
 
 # ================================
-# GRÁFICO 2: Top autores más citados (horizontal)
+# GRÁFICO 2: Top autores más citados (HORIZONTAL MODERNO)
 # ================================
 st.markdown("## 🏆 Top 10 autores más citados")
 
@@ -247,16 +273,36 @@ df_top_autores = extraer_top_autores(df, top_n=10)
 
 if not df_top_autores.empty:
     fig2, ax2 = plt.subplots(figsize=(10, 6))
-    y_pos = range(len(df_top_autores))
-    ax2.barh(y_pos, df_top_autores['Total Citas'], color='#42929d')
-    ax2.set_yticks(y_pos)
-    ax2.set_yticklabels(df_top_autores['Autor'])
-    ax2.invert_yaxis()
-    ax2.set_xlabel("Total de citas", fontsize=11)
-    ax2.set_title("Investigadores con mayor impacto en IA y salud mental juvenil", fontsize=13)
     
+    # Colores degradados (más citado = más intenso)
+    colores_barra = plt.cm.viridis_r(np.linspace(0.2, 0.9, len(df_top_autores)))
+    
+    # Gráfico horizontal
+    y_pos = range(len(df_top_autores))
+    barras = ax2.barh(y_pos, df_top_autores['Total Citas'], color=colores_barra, edgecolor='white', linewidth=1)
+    
+    # Configuración
+    ax2.set_yticks(y_pos)
+    ax2.set_yticklabels(df_top_autores['Autor'], fontsize=10)
+    ax2.invert_yaxis()
+    ax2.set_xlabel("Total de citas", fontsize=12, fontweight='semibold', color='#34495e')
+    ax2.set_title("🏅 Investigadores con mayor impacto en IA y salud mental juvenil", 
+                  fontsize=14, fontweight='bold', pad=20, color='#2c3e50')
+    
+    # Cuadrícula suave
+    ax2.grid(axis='x', linestyle='--', alpha=0.3, color='gray')
+    ax2.set_axisbelow(True)
+    
+    # Valores al final de cada barra
     for i, (_, row) in enumerate(df_top_autores.iterrows()):
-        ax2.text(row['Total Citas'] + 0.5, i, str(int(row['Total Citas'])), va='center', fontsize=9)
+        ax2.text(row['Total Citas'] + 0.5, i, str(int(row['Total Citas'])), 
+                 va='center', fontsize=9, fontweight='bold', color='#2c3e50')
+    
+    # Fondo y bordes
+    ax2.set_facecolor('#f8f9fa')
+    fig2.patch.set_facecolor('white')
+    ax2.spines['top'].set_visible(False)
+    ax2.spines['right'].set_visible(False)
     
     plt.tight_layout()
     st.pyplot(fig2)
@@ -266,7 +312,7 @@ else:
 st.divider()
 
 # ================================
-# GRÁFICO 3: Palabras frecuentes en abstracts
+# GRÁFICO 3: Palabras frecuentes en abstracts (MODERNO)
 # ================================
 st.markdown("## 🔍 Tendencias: Palabras clave en abstracts")
 
@@ -275,14 +321,34 @@ if df['Abstract'].str.len().sum() > 0:
     
     if not df_palabras.empty:
         fig3, ax3 = plt.subplots(figsize=(10, 6))
-        ax3.bar(df_palabras['Palabra'], df_palabras['Frecuencia'], color='#2ca02c')
-        ax3.set_xlabel("Palabra", fontsize=11)
-        ax3.set_ylabel("Frecuencia", fontsize=11)
-        ax3.set_title("Términos más repetidos en los resúmenes (sin stop-words)", fontsize=13)
-        ax3.tick_params(axis='x', rotation=45)
         
-        for i, (_, row) in enumerate(df_palabras.iterrows()):
-            ax3.text(i, row['Frecuencia'] + 0.5, str(row['Frecuencia']), ha='center', fontsize=9)
+        # Colores cálidos (naranja/rojo para destacar)
+        colores = plt.cm.OrRd(np.linspace(0.3, 0.9, len(df_palabras)))
+        
+        barras = ax3.bar(df_palabras['Palabra'], df_palabras['Frecuencia'], 
+                         color=colores, edgecolor='white', linewidth=1.5)
+        
+        ax3.set_xlabel("Palabra", fontsize=12, fontweight='semibold', color='#34495e')
+        ax3.set_ylabel("Frecuencia", fontsize=12, fontweight='semibold', color='#34495e')
+        ax3.set_title("🔤 Términos más repetidos en los resúmenes (sin stop-words)", 
+                      fontsize=14, fontweight='bold', pad=20, color='#2c3e50')
+        ax3.tick_params(axis='x', rotation=45, labelsize=10)
+        ax3.tick_params(axis='y', labelsize=10)
+        
+        # Cuadrícula
+        ax3.grid(axis='y', linestyle='--', alpha=0.3, color='gray')
+        ax3.set_axisbelow(True)
+        
+        # Valores encima de barras
+        for barra, (_, row) in zip(barras, df_palabras.iterrows()):
+            ax3.text(barra.get_x() + barra.get_width()/2, barra.get_height() + 0.5,
+                     str(row['Frecuencia']), ha='center', va='bottom', fontsize=9, fontweight='bold')
+        
+        # Fondo y bordes
+        ax3.set_facecolor('#f8f9fa')
+        fig3.patch.set_facecolor('white')
+        ax3.spines['top'].set_visible(False)
+        ax3.spines['right'].set_visible(False)
         
         plt.tight_layout()
         st.pyplot(fig3)
@@ -293,6 +359,3 @@ if df['Abstract'].str.len().sum() > 0:
         st.warning("No se pudieron extraer palabras suficientes")
 else:
     st.warning("No hay abstracts disponibles")
-
-st.divider()
-st.caption("📌 Dashboard desarrollado con Streamlit | Datos cargados desde GitHub | Grupo 05")
