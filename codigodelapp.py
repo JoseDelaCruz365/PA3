@@ -288,6 +288,72 @@ else:
 
 st.divider()
 
+# ================================
+# GRÁFICO 2: Top N Artículos Más Citados (asegurando mayor arriba)
+# ================================
+st.markdown("## 🏆 Top Artículos Más Citados sobre IA en Salud Mental Juvenil")
+
+# Selector de cantidad
+col_filtro, _ = st.columns([1, 3])
+with col_filtro:
+    top_n = st.selectbox("📊 Mostrar top N artículos", options=[5, 10, 15, 20], index=0)
+
+# Preparar top artículos por citas
+top_articulos = df.nlargest(top_n, 'Cited by')[['Title', 'Cited by']].copy()
+# Ordenar de MAYOR a MENOR (el más citado primero en el DataFrame)
+top_articulos = top_articulos.sort_values('Cited by', ascending=False).reset_index(drop=True)
+
+if not top_articulos.empty:
+    altura = max(4, top_n * 0.45)
+    
+    fig2, ax2 = plt.subplots(figsize=(12, altura))
+    
+    fig2.patch.set_alpha(0)
+    ax2.patch.set_alpha(0)
+    
+    # Truncar títulos
+    titulos = []
+    for t in top_articulos['Title']:
+        t_str = str(t)
+        if len(t_str) > 55:
+            titulos.append(t_str[:52] + "...")
+        else:
+            titulos.append(t_str)
+    
+    # Barras horizontales (posición 0 = arriba)
+    y_pos = range(len(top_articulos))
+    barras = ax2.barh(y_pos, top_articulos['Cited by'], 
+                      color='#42929d', height=0.7, alpha=0.85)
+    
+    # Configuración
+    ax2.set_yticks(y_pos)
+    ax2.set_yticklabels(titulos, fontsize=9, color='#cccccc')
+    # NO invertir y_pos para que el primer elemento (más citado) quede arriba
+    ax2.set_xlabel("Número de citas recibidas", fontsize=11, color='#888888')
+    ax2.set_title(f"Top {top_n} Investigaciones Más Influyentes en IA para Salud Mental Juvenil", 
+                  fontsize=13, fontweight='bold', pad=15, color='#cccccc')
+    
+    # Cuadrícula
+    ax2.grid(axis='x', linestyle='--', alpha=0.2, color='#666666')
+    ax2.set_axisbelow(True)
+    
+    # Eliminar bordes
+    ax2.spines['top'].set_visible(False)
+    ax2.spines['right'].set_visible(False)
+    ax2.spines['left'].set_color('#555555')
+    ax2.spines['bottom'].set_color('#555555')
+    
+    # Valores al final de cada barra
+    for i, (_, row) in enumerate(top_articulos.iterrows()):
+        ax2.text(row['Cited by'] + 0.5, i, str(int(row['Cited by'])), 
+                 va='center', fontsize=9, fontweight='bold', color='#ffcc66')
+    
+    plt.tight_layout()
+    st.pyplot(fig2)
+else:
+    st.warning("No se encontraron artículos con citas suficientes")
+
+st.divider()
 
 # ================================
 # GRÁFICO 3: Palabras frecuentes en abstracts
