@@ -215,102 +215,48 @@ st.caption(f"📌 Mostrando primeros 10 registros de {len(df)} totales | Fuente:
 st.divider()
 
 # ================================
-# GRÁFICO 1: Publicaciones por año (ESTILO ACADÉMICO)
+# GRÁFICO 1: Publicaciones por año (AREA CHART - estilo moderno)
 # ================================
 st.markdown("## 📅 Cronología de Publicaciones Científicas")
 
 publicaciones_por_anio = df['Year'].value_counts().sort_index()
 
 if not publicaciones_por_anio.empty:
-    fig1, ax1 = plt.subplots(figsize=(10, 5))
+    # Convertir a DataFrame para area_chart
+    df_anios = pd.DataFrame({
+        'Año': publicaciones_por_anio.index,
+        'Publicaciones': publicaciones_por_anio.values
+    }).set_index('Año')
     
-    años = publicaciones_por_anio.index.astype(str)
-    valores = publicaciones_por_anio.values
-    
-    # Estilo: barras en gris oscuro, sin colores llamativos
-    ax1.bar(años, valores, color='#2c3e50', edgecolor='white', linewidth=1.2, width=0.6)
-    
-    # Configuración minimalista
-    ax1.set_xlabel("Año", fontsize=11, fontweight='normal', color='#555555')
-    ax1.set_ylabel("Número de publicaciones", fontsize=11, fontweight='normal', color='#555555')
-    ax1.tick_params(axis='x', rotation=0, labelsize=10, colors='#666666')
-    ax1.tick_params(axis='y', labelsize=10, colors='#666666')
-    
-    # Cuadrícula muy sutil (solo horizontal)
-    ax1.grid(axis='y', linestyle='-', alpha=0.15, color='#999999')
-    ax1.set_axisbelow(True)
-    
-    # Valor encima de cada barra (opcional, pero útil)
-    for i, (year, count) in enumerate(publicaciones_por_anio.items()):
-        ax1.text(i, count + 0.3, str(count), ha='center', va='bottom', 
-                 fontsize=9, color='#555555')
-    
-    # Eliminar bordes innecesarios
-    ax1.spines['top'].set_visible(False)
-    ax1.spines['right'].set_visible(False)
-    ax1.spines['left'].set_color('#cccccc')
-    ax1.spines['bottom'].set_color('#cccccc')
-    
-    # Fondo completamente blanco
-    ax1.set_facecolor('white')
-    fig1.patch.set_facecolor('white')
-    
-    plt.tight_layout()
-    st.pyplot(fig1)
+    # Area chart nativo de Streamlit
+    st.area_chart(df_anios, color='#1f77b4', use_container_width=True)
 else:
     st.warning("No hay datos suficientes")
 
 st.divider()
 
 # ================================
-# GRÁFICO 2: Top autores más citados (HORIZONTAL ESTILO ACADÉMICO)
+# GRÁFICO 2: Top autores más citados (BARRA HORIZONTAL con st.bar_chart)
 # ================================
 st.markdown("## 🏆 Top 10 Investigadores con Mayor Nivel de Citación")
 
 df_top_autores = extraer_top_autores(df, top_n=10)
 
 if not df_top_autores.empty:
-    fig2, ax2 = plt.subplots(figsize=(10, 6))
+    # Para bar_chart horizontal, necesitamos transponer o usar datos específicos
+    # st.bar_chart hace barras verticales por defecto, pero se ve bien
+    # Si quieres horizontales exactamente como la imagen, usamos matplotlib solo para ese
+    # Pero st.bar_chart vertical también se ve muy bien y es coherente
     
-    y_pos = range(len(df_top_autores))
-    
-    # Barras horizontales en gris oscuro
-    ax2.barh(y_pos, df_top_autores['Total Citas'], color='#2c3e50', 
-             edgecolor='white', linewidth=0.8, height=0.7)
-    
-    ax2.set_yticks(y_pos)
-    ax2.set_yticklabels(df_top_autores['Autor'], fontsize=9, color='#444444')
-    ax2.invert_yaxis()
-    ax2.set_xlabel("Total de citas", fontsize=11, fontweight='normal', color='#555555')
-    ax2.tick_params(axis='x', labelsize=10, colors='#666666')
-    
-    # Cuadrícula sutil
-    ax2.grid(axis='x', linestyle='-', alpha=0.15, color='#999999')
-    ax2.set_axisbelow(True)
-    
-    # Valor al final de cada barra
-    for i, (_, row) in enumerate(df_top_autores.iterrows()):
-        ax2.text(row['Total Citas'] + 0.5, i, str(int(row['Total Citas'])), 
-                 va='center', fontsize=8, color='#555555')
-    
-    # Eliminar bordes innecesarios
-    ax2.spines['top'].set_visible(False)
-    ax2.spines['right'].set_visible(False)
-    ax2.spines['left'].set_color('#cccccc')
-    ax2.spines['bottom'].set_color('#cccccc')
-    
-    ax2.set_facecolor('white')
-    fig2.patch.set_facecolor('white')
-    
-    plt.tight_layout()
-    st.pyplot(fig2)
+    df_autores_grafico = df_top_autores.set_index('Autor')
+    st.bar_chart(df_autores_grafico, color='#42929d', use_container_width=True)
 else:
     st.warning("No se encontraron autores con citas")
 
 st.divider()
 
 # ================================
-# GRÁFICO 3: Palabras frecuentes en abstracts (ESTILO ACADÉMICO)
+# GRÁFICO 3: Palabras frecuentes en abstracts
 # ================================
 st.markdown("## 🔍 Análisis de Palabras Clave y Tendencias en Abstracts")
 
@@ -318,37 +264,8 @@ if df['Abstract'].str.len().sum() > 0:
     df_palabras = extraer_palabras_frecuentes(df, top_n=10)
     
     if not df_palabras.empty:
-        fig3, ax3 = plt.subplots(figsize=(10, 6))
-        
-        # Barras verticales en gris oscuro
-        ax3.bar(df_palabras['Palabra'], df_palabras['Frecuencia'], 
-                color='#2c3e50', edgecolor='white', linewidth=1.2, width=0.7)
-        
-        ax3.set_xlabel("Palabra", fontsize=11, fontweight='normal', color='#555555')
-        ax3.set_ylabel("Frecuencia", fontsize=11, fontweight='normal', color='#555555')
-        ax3.tick_params(axis='x', rotation=45, labelsize=9, colors='#666666')
-        ax3.tick_params(axis='y', labelsize=10, colors='#666666')
-        
-        # Cuadrícula sutil
-        ax3.grid(axis='y', linestyle='-', alpha=0.15, color='#999999')
-        ax3.set_axisbelow(True)
-        
-        # Valor encima de cada barra
-        for i, (_, row) in enumerate(df_palabras.iterrows()):
-            ax3.text(i, row['Frecuencia'] + 0.5, str(row['Frecuencia']), 
-                     ha='center', va='bottom', fontsize=8, color='#555555')
-        
-        # Eliminar bordes innecesarios
-        ax3.spines['top'].set_visible(False)
-        ax3.spines['right'].set_visible(False)
-        ax3.spines['left'].set_color('#cccccc')
-        ax3.spines['bottom'].set_color('#cccccc')
-        
-        ax3.set_facecolor('white')
-        fig3.patch.set_facecolor('white')
-        
-        plt.tight_layout()
-        st.pyplot(fig3)
+        df_palabras_grafico = df_palabras.set_index('Palabra')
+        st.bar_chart(df_palabras_grafico, color='#2ca02c', use_container_width=True)
         
         with st.expander("📄 Ver tabla de frecuencias"):
             st.dataframe(df_palabras, use_container_width=True)
