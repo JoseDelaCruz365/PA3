@@ -215,25 +215,63 @@ st.caption(f"📌 Mostrando primeros 10 registros de {len(df)} totales | Fuente:
 st.divider()
 
 # ================================
-# GRÁFICO 1: Publicaciones por año (AREA CHART - estilo moderno)
+# BLOQUE 1: Evolución Temporal + Impacto (DOBLE EJE)
 # ================================
-st.markdown("## 📅 Cronología de Publicaciones Científicas")
+st.markdown("## 📊 Bloque 1: Evolución Temporal e Investigadores de Mayor Impacto")
 
+# Preparar datos por año
 publicaciones_por_anio = df['Year'].value_counts().sort_index()
+citas_por_anio = df.groupby('Year')['Cited by'].sum().sort_index()
 
 if not publicaciones_por_anio.empty:
-    # Convertir años a string para evitar formato con comas
-    df_anios = pd.DataFrame({
-        'Año': publicaciones_por_anio.index.astype(str),  # ← CLAVE: convertir a string
-        'Publicaciones': publicaciones_por_anio.values
-    }).set_index('Año')
+    fig1, ax1 = plt.subplots(figsize=(12, 5))
     
-    # Area chart nativo de Streamlit
-    st.area_chart(df_anios, color='#1f77b4', use_container_width=True)
+    # Eje izquierdo: Barras de publicaciones
+    años = publicaciones_por_anio.index.astype(int)
+    barras = ax1.bar(años, publicaciones_por_anio.values, color='#1f77b4', 
+                     alpha=0.7, label='Publicaciones', width=0.6)
+    
+    ax1.set_xlabel("Año de publicación", fontsize=11)
+    ax1.set_ylabel("Número de Publicaciones", fontsize=11, color='#1f77b4')
+    ax1.tick_params(axis='y', labelcolor='#1f77b4')
+    ax1.set_xticks(años)
+    ax1.set_xticklabels(años, rotation=0)
+    
+    # Eje derecho: Línea de citas
+    ax2 = ax1.twinx()
+    ax2.plot(años, citas_por_anio.values, color='#d62728', marker='o', 
+             linewidth=2, markersize=6, label='Impacto (Citas)')
+    ax2.set_ylabel("Citas Totales", fontsize=11, color='#d62728')
+    ax2.tick_params(axis='y', labelcolor='#d62728')
+    
+    # Título y cuadrícula
+    ax1.set_title("Evolución de la Investigación en IA para Prevención de Salud Mental Juvenil", 
+                  fontsize=13, fontweight='bold', pad=15)
+    ax1.grid(axis='y', linestyle='--', alpha=0.3)
+    ax1.set_axisbelow(True)
+    
+    # Leyenda combinada
+    lines1, labels1 = ax1.get_legend_handles_labels()
+    lines2, labels2 = ax2.get_legend_handles_labels()
+    ax1.legend(lines1 + lines2, labels1 + labels2, loc='upper left', frameon=True, fancybox=True)
+    
+    # Valores encima de barras
+    for barra, valor in zip(barras, publicaciones_por_anio.values):
+        ax1.text(barra.get_x() + barra.get_width()/2, barra.get_height() + 0.3,
+                 str(valor), ha='center', va='bottom', fontsize=8, color='#1f77b4')
+    
+    # Valores en la línea de citas
+    for i, (year, citas) in enumerate(zip(años, citas_por_anio.values)):
+        ax2.text(year, citas + 3, str(int(citas)), ha='center', va='bottom', 
+                 fontsize=8, color='#d62728')
+    
+    plt.tight_layout()
+    st.pyplot(fig1)
 else:
     st.warning("No hay datos suficientes")
 
 st.divider()
+
 # ================================
 # GRÁFICO 2: Top autores más citados (BARRA HORIZONTAL con st.bar_chart)
 # ================================
