@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import re
+import numpy as np
 from collections import Counter
 
 # ================================
@@ -14,7 +15,7 @@ st.set_page_config(
 )
 
 # ================================
-# URL DIRECTA DE TU CSV EN GITHUB
+# ⚠️ URL DIRECTA DE TU CSV EN GITHUB (rama main - siempre actualizada)
 # ================================
 URL_CSV_GITHUB = "https://raw.githubusercontent.com/JoseDelaCruz365/PA3/main/scopus_export%20(2).csv"
 
@@ -24,16 +25,19 @@ URL_CSV_GITHUB = "https://raw.githubusercontent.com/JoseDelaCruz365/PA3/main/sco
 
 @st.cache_data
 def cargar_datos_desde_github(url):
+    """Carga el CSV directamente desde GitHub"""
     try:
         df = pd.read_csv(url)
         st.success(f"✅ Archivo cargado exitosamente desde GitHub: {len(df)} registros")
         return df
     except Exception as e:
         st.error(f"❌ Error al cargar desde GitHub: {e}")
+        st.info("Verifica que la URL sea correcta y el archivo exista en el repositorio")
         return None
 
 @st.cache_data
 def limpiar_datos(df):
+    """Limpia y prepara el DataFrame"""
     df['Year'] = pd.to_numeric(df['Year'], errors='coerce')
     df['Cited by'] = df['Cited by'].astype(str).str.replace(',', '').str.strip()
     df['Cited by'] = pd.to_numeric(df['Cited by'], errors='coerce').fillna(0)
@@ -53,10 +57,10 @@ def extraer_top_autores(df, top_n=10):
         else:
             autores = [autores_str.strip()]
         for autor in autores:
-            if autor and autor != "Autor Desconocido" and autor != "Unknown Author":
+            if autor and autor != "Autor Desconocido":
                 autor_limpio = autor.replace('"', '').strip()
-                if len(autor_limpio) > 28:
-                    autor_limpio = autor_limpio[:25] + "..."
+                if len(autor_limpio) > 30:
+                    autor_limpio = autor_limpio[:27] + "..."
                 citas_por_autor[autor_limpio] = citas_por_autor.get(autor_limpio, 0) + citas
     if citas_por_autor:
         top_autores = sorted(citas_por_autor.items(), key=lambda x: x[1], reverse=True)[:top_n]
@@ -74,31 +78,33 @@ def extraer_palabras_frecuentes(df, top_n=10):
         'system', 'systems', 'work', 'present', 'discuss', 'show',
         'demonstrate', 'provide', 'identify', 'evaluate', 'evaluation',
         'performance', 'different', 'compared', 'comparison', 'health',
-        'mental', 'students', 'university', 'clinical', 'treatment',
-        'well', 'being', 'also', 'may', 'will', 'can', 'used', 'using'
+        'mental', 'students', 'university', 'clinical', 'treatment'
     }
     palabras_filtradas = [p for p in palabras if p not in stop_words and len(p) >= 4]
     contador = Counter(palabras_filtradas)
     return pd.DataFrame(contador.most_common(top_n), columns=['Palabra', 'Frecuencia'])
 
 # ================================
-# CARGA DE DATOS
+# CARGA DE DATOS DESDE GITHUB
 # ================================
 st.title("🧠 Inteligencia Artificial y la Prevención de Salud Mental Juvenil")
 st.caption("Análisis Bibliométrico | Datos cargados directamente desde GitHub")
 
+# Cargar datos
 df_raw = cargar_datos_desde_github(URL_CSV_GITHUB)
 
 if df_raw is None:
     st.stop()
 
+# Limpiar datos
 df_raw = limpiar_datos(df_raw)
 
+# Determinar rangos
 min_year = int(df_raw['Year'].min()) if not pd.isna(df_raw['Year'].min()) else 2019
 max_year = int(df_raw['Year'].max()) if not pd.isna(df_raw['Year'].max()) else 2026
 
 # ================================
-# SIDEBAR
+# SIDEBAR - INFORMACIÓN Y FILTROS
 # ================================
 with st.sidebar:
     st.image("https://cdn-icons-png.flaticon.com/512/2103/2103633.png", width=70)
@@ -122,10 +128,12 @@ with st.sidebar:
         - **Base de datos:** Scopus  
         - **Rango:** {min_year} - {max_year}  
         - **Keywords:** Artificial Intelligence, Mental Health, Prevention, Youth
+        - **Repositorio:** [GitHub - JoseDelaCruz365/PA3](https://github.com/JoseDelaCruz365/PA3)
         """)
     
     st.divider()
     
+    # Filtro de años
     st.markdown("## 🎚️ Filtro Temporal")
     rango_anios = st.slider(
         "Rango de años",
@@ -135,143 +143,133 @@ with st.sidebar:
         step=1
     )
     st.caption(f"📅 Mostrando: {rango_anios[0]} - {rango_anios[1]}")
+    
+    # Mostrar información del archivo
+    st.divider()
+    st.caption(f"📁 Archivo: `scopus_export (2).csv`")
+    st.caption(f"✅ Cargado desde GitHub")
 
-# Aplicar filtro
+# Aplicar filtro de años
 df = df_raw[(df_raw['Year'] >= rango_anios[0]) & (df_raw['Year'] <= rango_anios[1])]
 
 # ================================
-# BLOQUE 1: DOS GRÁFICOS LADO A LADO
+# RECOMENDACIONES (inspirado en el dashboard de referencia)
 # ================================
-st.markdown("## 📊 Bloque 1: Evolución Temporal e Investigadores de Mayor Impacto")
+st.markdown("## 📋 Recomendaciones basadas en la literatura")
 
-col1, col2 = st.columns(2)
+col_rec1, col_rec2, col_rec3 = st.columns(3)
 
-# GRÁFICO 1: Publicaciones por año
-with col1:
-    st.markdown("### 📅 Cronología de Publicaciones Científicas")
-    
-    publicaciones_por_anio = df['Year'].value_counts().sort_index()
-    
-    if not publicaciones_por_anio.empty:
-        fig1, ax1 = plt.subplots(figsize=(6, 4))
-        
-        años = publicaciones_por_anio.index.astype(int)
-        valores = publicaciones_por_anio.values
-        
-        # Barras en azul profesional
-        barras = ax1.bar(años, valores, color='#1f77b4', edgecolor='white', linewidth=1)
-        
-        ax1.set_xlabel("Año", fontsize=10)
-        ax1.set_ylabel("Número de publicaciones", fontsize=10)
-        ax1.tick_params(axis='x', labelsize=9)
-        ax1.tick_params(axis='y', labelsize=9)
-        ax1.grid(axis='y', linestyle='--', alpha=0.3)
-        ax1.set_axisbelow(True)
-        
-        # Valor encima de cada barra
-        for barra, valor in zip(barras, valores):
-            ax1.text(barra.get_x() + barra.get_width()/2, barra.get_height() + 0.3,
-                     str(valor), ha='center', va='bottom', fontsize=8)
-        
-        ax1.spines['top'].set_visible(False)
-        ax1.spines['right'].set_visible(False)
-        
-        plt.tight_layout()
-        st.pyplot(fig1)
-    else:
-        st.warning("No hay datos")
+with col_rec1:
+    st.markdown("### 🎓 Para estudiantes")
+    st.markdown("""
+    - Utilizar aplicaciones de IA (chatbots) como apoyo emocional
+    - Participar en programas de prevención digital
+    - Reconocer señales de alerta temprana
+    """)
 
-# GRÁFICO 2: Top autores
-with col2:
-    st.markdown("### 🏆 Top 10 Investigadores con Mayor Nivel de Citación")
-    
-    df_top_autores = extraer_top_autores(df, top_n=10)
-    
-    if not df_top_autores.empty:
-        fig2, ax2 = plt.subplots(figsize=(6, 5))
-        
-        y_pos = range(len(df_top_autores))
-        ax2.barh(y_pos, df_top_autores['Total Citas'], color='#42929d', height=0.7)
-        
-        ax2.set_yticks(y_pos)
-        ax2.set_yticklabels(df_top_autores['Autor'], fontsize=8)
-        ax2.invert_yaxis()
-        ax2.set_xlabel("Total de citas", fontsize=10)
-        ax2.tick_params(axis='x', labelsize=9)
-        ax2.grid(axis='x', linestyle='--', alpha=0.3)
-        
-        for i, (_, row) in enumerate(df_top_autores.iterrows()):
-            ax2.text(row['Total Citas'] + 0.5, i, str(int(row['Total Citas'])), 
-                     va='center', fontsize=8)
-        
-        ax2.spines['top'].set_visible(False)
-        ax2.spines['right'].set_visible(False)
-        
-        plt.tight_layout()
-        st.pyplot(fig2)
-    else:
-        st.warning("No hay datos")
+with col_rec2:
+    st.markdown("### 🔬 Para investigadores")
+    st.markdown("""
+    - Desarrollar modelos predictivos validados
+    - Incluir datos demográficos diversos
+    - Reportar métricas de rendimiento completas
+    - Priorizar la ética y privacidad de datos
+    """)
+
+with col_rec3:
+    st.markdown("### 🏥 Para profesionales de salud mental")
+    st.markdown("""
+    - Incorporar herramientas de IA como apoyo diagnóstico
+    - Mantener actualización en tecnologías digitales
+    - Validar hallazgos con enfoque clínico
+    - Capacitarse en telepsicología
+    """)
 
 st.divider()
 
 # ================================
-# BLOQUE 2: TABLA + GRÁFICO DE PALABRAS
+# KPI MÉTRICAS
 # ================================
-st.markdown("## 🔍 Bloque 2: Análisis de Palabras Clave y Tendencias en Abstracts")
-
-col3, col4 = st.columns(2)
-
-# Tabla de palabras frecuentes
-with col3:
-    st.markdown("### 📋 Matriz Numérica de Conceptos Frecuentes")
-    
-    if df['Abstract'].str.len().sum() > 0:
-        df_palabras = extraer_palabras_frecuentes(df, top_n=10)
-        
-        if not df_palabras.empty:
-            st.dataframe(df_palabras, use_container_width=True, hide_index=True)
-        else:
-            st.warning("No se pudieron extraer palabras")
-    else:
-        st.warning("No hay abstracts disponibles")
-
-# Gráfico de frecuencia de palabras
-with col4:
-    st.markdown("### 📊 Frecuencia de Enfoques de IA y Métodos de Prevención")
-    
-    if 'df_palabras' in locals() and not df_palabras.empty:
-        fig3, ax3 = plt.subplots(figsize=(6, 4))
-        
-        barras = ax3.bar(df_palabras['Palabra'], df_palabras['Frecuencia'], 
-                         color='#2ca02c', edgecolor='white', linewidth=1)
-        
-        ax3.set_xlabel("Palabra", fontsize=10)
-        ax3.set_ylabel("Frecuencia", fontsize=10)
-        ax3.tick_params(axis='x', rotation=45, labelsize=8)
-        ax3.tick_params(axis='y', labelsize=9)
-        ax3.grid(axis='y', linestyle='--', alpha=0.3)
-        ax3.set_axisbelow(True)
-        
-        for barra, (_, row) in zip(barras, df_palabras.iterrows()):
-            ax3.text(barra.get_x() + barra.get_width()/2, barra.get_height() + 0.3,
-                     str(row['Frecuencia']), ha='center', va='bottom', fontsize=8)
-        
-        ax3.spines['top'].set_visible(False)
-        ax3.spines['right'].set_visible(False)
-        
-        plt.tight_layout()
-        st.pyplot(fig3)
-    else:
-        st.warning("No hay datos para graficar")
+col_k1, col_k2, col_k3, col_k4 = st.columns(4)
+with col_k1:
+    st.metric("🔬 Volumen de artículos", f"{len(df)} docs")
+with col_k2:
+    st.metric("💬 Citas totales", f"{int(df['Cited by'].sum()):,}")
+with col_k3:
+    st.metric("📈 Impacto promedio", f"{round(df['Cited by'].mean(), 2)}")
+with col_k4:
+    st.metric("📅 Rango seleccionado", f"{rango_anios[0]} - {rango_anios[1]}")
 
 st.divider()
 
 # ================================
-# BLOQUE 3: VISTA PREVIA DE DATOS
+# TABLA DE DATOS (df.head)
 # ================================
-st.markdown("## 📋 Bloque 3: Explorador e Integridad de Datos (Vista Previa df.head)")
-st.dataframe(df[['Authors', 'Title', 'Year', 'Cited by', 'Source title']].head(10), use_container_width=True)
+st.markdown("## 📄 Vista previa de datos (Scopus)")
+st.dataframe(
+    df[['Authors', 'Title', 'Year', 'Cited by', 'Source title', 'Document Type']].head(10),
+    use_container_width=True
+)
 st.caption(f"📌 Mostrando primeros 10 registros de {len(df)} totales | Fuente: Scopus")
 
 st.divider()
-st.caption("📌 Dashboard desarrollado con Streamlit | Datos cargados desde GitHub | Grupo 05")
+
+# ================================
+# GRÁFICO 1: Publicaciones por año (AREA CHART - estilo moderno)
+# ================================
+st.markdown("## 📅 Cronología de Publicaciones Científicas")
+
+publicaciones_por_anio = df['Year'].value_counts().sort_index()
+
+if not publicaciones_por_anio.empty:
+    # Convertir a DataFrame para area_chart
+    df_anios = pd.DataFrame({
+        'Año': publicaciones_por_anio.index,
+        'Publicaciones': publicaciones_por_anio.values
+    }).set_index('Año')
+    
+    # Area chart nativo de Streamlit
+    st.area_chart(df_anios, color='#1f77b4', use_container_width=True)
+else:
+    st.warning("No hay datos suficientes")
+
+st.divider()
+
+# ================================
+# GRÁFICO 2: Top autores más citados (BARRA HORIZONTAL con st.bar_chart)
+# ================================
+st.markdown("## 🏆 Top 10 Investigadores con Mayor Nivel de Citación")
+
+df_top_autores = extraer_top_autores(df, top_n=10)
+
+if not df_top_autores.empty:
+    # Para bar_chart horizontal, necesitamos transponer o usar datos específicos
+    # st.bar_chart hace barras verticales por defecto, pero se ve bien
+    # Si quieres horizontales exactamente como la imagen, usamos matplotlib solo para ese
+    # Pero st.bar_chart vertical también se ve muy bien y es coherente
+    
+    df_autores_grafico = df_top_autores.set_index('Autor')
+    st.bar_chart(df_autores_grafico, color='#42929d', use_container_width=True)
+else:
+    st.warning("No se encontraron autores con citas")
+
+st.divider()
+
+# ================================
+# GRÁFICO 3: Palabras frecuentes en abstracts
+# ================================
+st.markdown("## 🔍 Análisis de Palabras Clave y Tendencias en Abstracts")
+
+if df['Abstract'].str.len().sum() > 0:
+    df_palabras = extraer_palabras_frecuentes(df, top_n=10)
+    
+    if not df_palabras.empty:
+        df_palabras_grafico = df_palabras.set_index('Palabra')
+        st.bar_chart(df_palabras_grafico, color='#2ca02c', use_container_width=True)
+        
+        with st.expander("📄 Ver tabla de frecuencias"):
+            st.dataframe(df_palabras, use_container_width=True)
+    else:
+        st.warning("No se pudieron extraer palabras suficientes")
+else:
+    st.warning("No hay abstracts disponibles")
