@@ -289,7 +289,7 @@ else:
 st.divider()
 
 # ================================
-# GRÁFICO 2: Top N Artículos Más Citados (asegurando mayor arriba)
+# GRÁFICO 2: Top N Artículos Más Citados (CORREGIDO: mayor arriba)
 # ================================
 st.markdown("## 🏆 Top Artículos Más Citados sobre IA en Salud Mental Juvenil")
 
@@ -300,7 +300,7 @@ with col_filtro:
 
 # Preparar top artículos por citas
 top_articulos = df.nlargest(top_n, 'Cited by')[['Title', 'Cited by']].copy()
-# Ordenar de MAYOR a MENOR (el más citado primero en el DataFrame)
+# 🔑 CLAVE: Ordenar de MAYOR a MENOR (el más citado primero en el DataFrame)
 top_articulos = top_articulos.sort_values('Cited by', ascending=False).reset_index(drop=True)
 
 if not top_articulos.empty:
@@ -320,7 +320,7 @@ if not top_articulos.empty:
         else:
             titulos.append(t_str)
     
-    # Barras horizontales (posición 0 = arriba)
+    # Barras horizontales
     y_pos = range(len(top_articulos))
     barras = ax2.barh(y_pos, top_articulos['Cited by'], 
                       color='#42929d', height=0.7, alpha=0.85)
@@ -328,7 +328,7 @@ if not top_articulos.empty:
     # Configuración
     ax2.set_yticks(y_pos)
     ax2.set_yticklabels(titulos, fontsize=9, color='#cccccc')
-    # NO invertir y_pos para que el primer elemento (más citado) quede arriba
+    # 🔑 NO usar invert_yaxis() - el primer elemento (más citado) queda arriba
     ax2.set_xlabel("Número de citas recibidas", fontsize=11, color='#888888')
     ax2.set_title(f"Top {top_n} Investigaciones Más Influyentes en IA para Salud Mental Juvenil", 
                   fontsize=13, fontweight='bold', pad=15, color='#cccccc')
